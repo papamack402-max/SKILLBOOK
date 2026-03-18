@@ -5,12 +5,14 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CoursController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\PaiementController;
+use App\Http\Controllers\SessionController;
 
 // Routes publiques
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login',    [AuthController::class, 'login']);
 Route::get('/cours',     [CoursController::class, 'index']);
 Route::get('/cours/{id}', [CoursController::class, 'show']);
+Route::get('/cours/{id}/sessions', [SessionController::class, 'index']);
 
 
 // Routes protégées
@@ -29,6 +31,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/cours',        [CoursController::class, 'store']);
         Route::put('/cours/{id}',    [CoursController::class, 'update']);
         Route::delete('/cours/{id}', [CoursController::class, 'destroy']);
+        Route::get('/cours/{id}/sessions', [SessionController::class, 'index']);
+        Route::post('/sessions', [SessionController::class, 'store']);
+        Route::delete('/sessions/{id}', [SessionController::class, 'destroy']);
     });
 
     // Apprenant
