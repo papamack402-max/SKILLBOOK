@@ -27,8 +27,8 @@ class CoursController extends Controller
 
         $cours = Cours::create([
             ...$request->all(),
-            'user_id' => $request->user()->id(),
-            'statut'  => 'brouillon',
+            'user_id' => $request->user()->id,
+            'status'  => 'brouillon',
         ]);
 
         return response()->json($cours, 201);

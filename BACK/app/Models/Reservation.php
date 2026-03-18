@@ -6,6 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Reservation extends Model
 {
+     protected $fillable = [  // 
+        'user_id',
+        'session_id',
+        'date_reservation',
+        'statut',
+    ];//permet de spécifier les champs qui peuvent être remplis en masse (mass assignment)
     public function apprenant(){
         return $this->belongsTo(User::class, 'user_id'); //une réservation appartient à un apprenant (user_id)
     }

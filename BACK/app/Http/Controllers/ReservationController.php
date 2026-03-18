@@ -11,7 +11,7 @@ class ReservationController extends Controller
     {
         return response()->json(
             Reservation::with('session.cours', 'paiement')
-                ->where('user_id',$request->user()->id())
+                ->where('user_id', $request->user()->id)
                 ->get()
         );
     }
