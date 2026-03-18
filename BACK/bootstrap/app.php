@@ -10,9 +10,12 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    ->withMiddleware(function (Middleware $middleware): void {
-        //
+    ->withMiddleware(function (Middleware $middleware) {
+        $middleware->statefulApi(); //ceci est nécessaire pour que sancttum puisse fonctionner correctement
+        $middleware->alias([
+        'role' => \App\Http\Middleware\CheckRole::class, //ceci est nécessaire pour que le middleware "CheckRole" puisse être utilisé dans les routes
+        ]);
     })
-    ->withExceptions(function (Exceptions $exceptions): void {
+    ->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();

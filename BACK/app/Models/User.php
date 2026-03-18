@@ -7,11 +7,12 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;//ca sert à permettre à l'utilisateur de générer des tokens d'accès personnels pour l'authentification API, de créer des instances de modèles pour les tests et le développement, et de recevoir des notifications.
 
     /**
      * The attributes that are mass assignable.
@@ -19,9 +20,10 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name',
+        'nom',
         'email',
         'password',
+        'role',
     ];
 
     /**
@@ -45,5 +47,17 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+    public function cours()
+    {
+        return $this->hasMany(Cours::class); // si formateur
+    }
+    public function reservations()
+    {
+        return $this->hasMany(Reservation::class); // si apprenant
+    }
+    public function avis()
+    {
+        return $this->hasMany(Avis::class);
     }
 }
