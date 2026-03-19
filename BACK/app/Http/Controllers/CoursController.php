@@ -10,8 +10,48 @@ class CoursController extends Controller
     public function index()
     {
         return response()->json(
-            Cours::with('formateur', 'categorie', 'sessions')->get()
+            Cours::with('formateur', 'categorie', 'sessions')
+                ->where('status', 'publié')
+                ->get()
         );
+    }
+    public function indexAdmin()
+    {
+        $cours = Cours::with([
+            'formateur',
+            'categorie',
+            'sessions.reservations.apprenant'
+        ])
+            ->get()
+            ->map(function ($c) {
+                // 👇 définit $apprenants avant de l'utiliser
+                $apprenants = $c->sessions->flatMap(function ($s) {
+                    return $s->reservations
+                        ->where('status', '!=', 'annulée')
+                        ->map(function ($r) {
+                            return [
+                                'nom'   => $r->apprenant->nom ?? 'Inconnu',
+                                'email' => $r->apprenant->email ?? '',
+                            ];
+                        });
+                })->values();
+
+                return [
+                    'id'            => $c->id,
+                    'titre'         => $c->titre,
+                    'description'   => $c->description,
+                    'prix'          => $c->prix,
+                    'duree'         => $c->duree,
+                    'nb_places'     => $c->nb_places,
+                    'status'        => $c->status,
+                    'formateur_nom' => $c->formateur->nom ?? 'Inconnu',
+                    'nb_inscrits'   => $apprenants->count(), // 👈 utilise $apprenants
+                    'apprenants'    => $apprenants,           // 👈 utilise $apprenants
+                    'created_at'    => $c->created_at,
+                ];
+            });
+
+        return response()->json($cours);
     }
 
     public function store(Request $request)
@@ -56,7 +96,48 @@ class CoursController extends Controller
     public function valider($id)
     {
         $cours = Cours::findOrFail($id);
-        $cours->update(['statut' => 'publié']);
+        $cours->update(['status' => 'publié']);
         return response()->json(['message' => 'Cours validé']);
+    }
+    public function rejeter($id)
+    {
+        $cours = Cours::findOrFail($id);
+        $cours->update(['status' => 'rejeté']);
+        return response()->json(['message' => 'Cours rejeté']);
+    }
+    public function mesCours(Request $request)
+    {
+        $cours = Cours::with([
+            'sessions.reservations.apprenant'
+        ])
+            ->where('user_id', $request->user()->id)
+            ->get()
+            ->map(function ($c) {
+                $apprenants = $c->sessions->flatMap(function ($s) {
+                    return $s->reservations
+                        ->where('status', '!=', 'annulée')
+                        ->map(function ($r) {
+                            return [
+                                'nom'   => $r->apprenant->nom ?? 'Inconnu',
+                                'email' => $r->apprenant->email ?? '',
+                            ];
+                        });
+                })->values();
+
+                return [
+                    'id'            => $c->id,
+                    'titre'         => $c->titre,
+                    'description'   => $c->description,
+                    'prix'          => $c->prix,
+                    'duree'         => $c->duree,
+                    'nb_places'     => $c->nb_places,
+                    'status'        => $c->status,
+                    'nb_inscrits'   => $apprenants->count(),
+                    'apprenants'    => $apprenants,
+                    'created_at'    => $c->created_at,
+                ];
+            });
+
+        return response()->json($cours);
     }
 }

@@ -64,6 +64,9 @@ export default function Cours() {
                         <div key={c.id} style={styles.card}>
                             <h3 style={styles.cardTitle}>{c.titre}</h3>
                             <p style={styles.cardDesc}>{c.description}</p>
+                             <p style={styles.formateur}>
+                        👨‍🏫 {c.formateur?.nom ?? 'Formateur inconnu'}
+                             </p>
                             <div style={styles.cardFooter}>
                                 <span style={styles.prix}>{c.prix} FCFA</span>
                                 <span style={styles.duree}>⏱ {c.duree} min</span>

@@ -28,4 +28,15 @@ class Cours extends Model
     {
         return $this->hasMany(Session::class); //un cours peut avoir plusieurs sessions
     }
+    public function reservations()
+    {
+        return $this->hasManyThrough(
+            \App\Models\Reservation::class,
+            \App\Models\Session::class,
+            'cours_id',    // clé étrangère sur sessions
+            'session_id',  // clé étrangère sur reservations
+            'id',          // clé locale sur cours
+            'id'           // clé locale sur sessions
+        );
+    }
 }

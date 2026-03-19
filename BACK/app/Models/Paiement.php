@@ -11,9 +11,10 @@ class Paiement extends Model
         'montant',
         'date_paiement',
         'methode',
-        'statut',
+        'status',
     ];
-    public function reservation(){
+    public function reservation()
+    {
         return $this->belongsTo(Reservation::class); //un paiement appartient à une réservation (reservation_id)
     }
 }

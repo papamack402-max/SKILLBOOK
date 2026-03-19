@@ -14,13 +14,13 @@ return new class extends Migration
         Schema::create('cours', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade'); //
-            $table->foreignId('categorie_id')->nullable()->constrained()->onDelete('set null');//
+            $table->foreignId('categorie_id')->nullable()->constrained()->onDelete('set null'); //
             $table->string('titre');
             $table->text('description');
             $table->decimal('prix', 8, 2);
             $table->integer('duree'); //en minutes
             $table->integer('nb_places'); //nombre de places disponibles
-            $table->enum('status', ['brouillon', 'publie', 'archivé'])->default('brouillon'); //le statut du cours, il peut être "brouillon" ou "publieou "archivé"
+            $table->enum('status', ['brouillon', 'publié', 'archivé'])->default('brouillon'); //le statut du cours, il peut être "brouillon" ou "publieou "archivé"
             $table->timestamps();
         });
     }

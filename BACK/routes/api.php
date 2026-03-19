@@ -13,6 +13,7 @@ Route::post('/login',    [AuthController::class, 'login']);
 Route::get('/cours',     [CoursController::class, 'index']);
 Route::get('/cours/{id}', [CoursController::class, 'show']);
 Route::get('/cours/{id}/sessions', [SessionController::class, 'index']);
+Route::get('/mes-cours', [CoursController::class, 'mesCours']);
 
 
 // Routes protégées
@@ -24,6 +25,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Admin
     Route::middleware('role:admin')->prefix('admin')->group(function () {
         Route::post('/cours/{id}/valider', [CoursController::class, 'valider']);
+        Route::get('/cours', [CoursController::class, 'indexAdmin']);
+        Route::post('/cours/{id}/rejeter', [CoursController::class, 'rejeter']);
     });
 
     // Formateur
@@ -34,6 +37,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/cours/{id}/sessions', [SessionController::class, 'index']);
         Route::post('/sessions', [SessionController::class, 'store']);
         Route::delete('/sessions/{id}', [SessionController::class, 'destroy']);
+        Route::get('/mes-cours', [CoursController::class, 'mesCours']); 
     });
 
     // Apprenant
@@ -42,5 +46,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/reservations',             [ReservationController::class, 'store']);
         Route::put('/reservations/{id}/annuler', [ReservationController::class, 'annuler']);
         Route::post('/paiements',                [PaiementController::class, 'effectuer']);
+        Route::get('/paiements', [PaiementController::class, 'mesPaiements']);
     });
 });

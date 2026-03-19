@@ -20,15 +20,14 @@ export default function FormateurDashboard() {
 
     const fetchCours = useCallback(async () => {
         try {
-            const res = await api.get('/cours');
-            const mesCours = res.data.filter(c => c.user_id === user.id);
-            setCours(mesCours);
+            const res = await api.get('/formateur/mes-cours');
+            setCours(res.data);
         } catch {
             console.error('Erreur chargement cours');
         } finally {
             setLoading(false);
         }
-    }, [user.id]);
+    }, []);
 
     useEffect(() => {
         fetchCours();
@@ -36,7 +35,7 @@ export default function FormateurDashboard() {
 
     const fetchSessions = async (coursId) => {
         try {
-            const res = await api.get(`/cours/${coursId}/sessions`);
+            const res = await api.get(`/formateur/cours/${coursId}/sessions`);
             setSessions(prev => ({ ...prev, [coursId]: res.data }));
         } catch {
             console.error('Erreur chargement sessions');
@@ -150,9 +149,27 @@ export default function FormateurDashboard() {
                                 <span style={styles.info}>⏱ {c.duree} min</span>
                                 <span style={styles.info}>👥 {c.nb_places} places</span>
                             </div>
-                            <span style={{ ...styles.badge, background: c.status === 'publié' ? '#10b981' : '#f59e0b' }}>
-                                {c.status}
-                            </span>
+                                    <span style={{
+                                            ...styles.badge,
+                                            background: c.status === 'publié' ? '#10b981'
+                                                : c.status === 'rejeté' ? '#ef4444' : '#f59e0b'
+                                        }}>
+                                            {c.status === 'brouillon' ? '⏳ En attente validation' : c.status}
+                                        </span>
+
+                               {/* Apprenants inscrits */}
+                                {c.apprenants && c.apprenants.length > 0 && (
+                                    <div style={styles.apprenantsBox}>
+                                        <p style={styles.apprenantsTitle}>🎓 {c.nb_inscrits} apprenant(s) inscrit(s) :</p>
+                                        {c.apprenants.map((a, i) => (
+                                            <div key={i} style={styles.apprenantItem}>
+                                                <span>👤 {a.nom}</span>
+                                                <span style={styles.apprenantEmail}>{a.email}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
 
                             {/* Sessions */}
                             <div style={styles.sessionsSection}>
@@ -264,4 +281,8 @@ const styles = {
     deleteSmBtn: { background:'#ef4444', color:'white', border:'none', width:'22px', height:'22px', borderRadius:'50%', cursor:'pointer', fontSize:'0.75rem' },
     actions: { marginTop:'1rem' },
     deleteBtn: { background:'#ef4444', color:'white', border:'none', padding:'0.5rem 1rem', borderRadius:'4px', cursor:'pointer', fontSize:'0.85rem' },
+    apprenantsBox: { marginTop:'1rem', borderTop:'1px solid #f3f4f6', paddingTop:'0.75rem' },
+    apprenantsTitle: { fontSize:'0.85rem', fontWeight:'500', color:'#374151', marginBottom:'0.5rem' },
+    apprenantItem: { display:'flex', justifyContent:'space-between', padding:'0.3rem 0', fontSize:'0.8rem', color:'#4b5563', borderBottom:'1px solid #f9fafb' },
+    apprenantEmail: { color:'#9ca3af' },
 };

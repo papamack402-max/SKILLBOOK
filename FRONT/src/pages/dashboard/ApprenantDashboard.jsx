@@ -7,18 +7,21 @@ export default function ApprenantDashboard() {
     const [cours, setCours] = useState([]);
     const [reservations, setReservations] = useState([]);
     const [sessions, setSessions] = useState({});
+    const [paiements, setPaiements] = useState([]);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState('');
     const { user, logout } = useAuth();
 
     const fetchData = useCallback(async () => {
         try {
-            const [coursRes, resaRes] = await Promise.all([
+            const [coursRes, resaRes, paiementsRes] = await Promise.all([ // 👈 corrigé
                 api.get('/cours'),
                 api.get('/apprenant/reservations'),
+                api.get('/apprenant/paiements'), // 👈 corrigé
             ]);
             setCours(coursRes.data);
             setReservations(resaRes.data);
+            setPaiements(paiementsRes.data); // 👈 corrigé
         } catch {
             console.error('Erreur chargement');
         } finally {
@@ -31,7 +34,7 @@ export default function ApprenantDashboard() {
     }, [fetchData]);
 
     const fetchSessions = async (coursId) => {
-        if (sessions[coursId]) return; // déjà chargé
+        if (sessions[coursId]) return;
         try {
             const res = await api.get(`/cours/${coursId}/sessions`);
             setSessions(prev => ({ ...prev, [coursId]: res.data }));
@@ -42,11 +45,10 @@ export default function ApprenantDashboard() {
 
     const handleReserver = async (sessionId) => {
         try {
-            const res = await api.post('/apprenant/reservations', { //CECI EST LA PARTIE AJOUTÉE
+            const res = await api.post('/apprenant/reservations', {
                 session_id: sessionId,
             });
             setMessage('✅ Réservation effectuée avec succès !');
-            // 👇 ajoute la nouvelle réservation localement
             setReservations(prev => [...prev, res.data]);
         } catch (err) {
             if (err.response?.status === 422) {
@@ -57,14 +59,29 @@ export default function ApprenantDashboard() {
         }
     };
 
+    const handlePayer = async (reservationId, methode) => {
+        try {
+            await api.post('/apprenant/paiements', {
+                reservation_id: reservationId,
+                methode: methode,
+            });
+            setMessage('✅ Paiement effectué avec succès !');
+            fetchData();
+        } catch (err) {
+            if (err.response?.status === 422) {
+                setMessage('⚠️ ' + err.response.data.message);
+            } else {
+                setMessage('❌ Erreur lors du paiement');
+            }
+        }
+    };
+
     const handleAnnuler = async (id) => {
         if (!confirm('Annuler cette réservation ?')) return;
         try {
             await api.put(`/apprenant/reservations/${id}/annuler`);
             setMessage('✅ Réservation annulée');
-            setReservations(prev => prev.filter(r => r.id !== id));//Ajouté pour retirer la réservation annulée de la liste sans recharger toutes les données
-
-            //Optionnel : recharger les données pour avoir la liste à jour, surtout si d'autres infos changent
+            setReservations(prev => prev.filter(r => r.id !== id));
         } catch {
             setMessage('❌ Erreur lors de l\'annulation');
         }
@@ -88,39 +105,73 @@ export default function ApprenantDashboard() {
                 {/* Mes réservations */}
                 <section style={styles.section}>
                     <h2 style={styles.title}>Mes réservations</h2>
-                    {reservations.length === 0 ? (
+                    {reservations.filter(r => r.status !== 'annulée').length === 0 ? (
                         <p style={styles.empty}>Aucune réservation pour le moment.</p>
                     ) : (
                         <div style={styles.grid}>
                             {reservations
-                            .filter(r => r.status !== 'annulée')
-                            .map(r => (
-                                <div key={r.id} style={styles.card}>
-                                    <h3 style={styles.cardTitle}>
-                                        {r.session?.cours?.titre || 'Cours'}
-                                    </h3>
-                                    <p style={styles.cardInfo}>
-                                        📅 {new Date(r.date_reservation).toLocaleDateString()}
-                                    </p>
-                                    {r.session && (
-                                        <p style={styles.cardInfo}>
-                                            🕐 {new Date(r.session.date_debut).toLocaleDateString()} → {new Date(r.session.date_fin).toLocaleDateString()}
-                                        </p>
-                                    )}
-                                    <span style={{
-                                        ...styles.badge,
-                                        background: r.status === 'confirmée' ? '#10b981'
-                                            : r.status=== 'annulée' ? '#ef4444' : '#f59e0b'
-                                    }}>
-                                        {r.status}
-                                    </span>
-                                    {r.status !== 'annulée' && (
-                                        <button style={styles.annulerBtn} onClick={() => handleAnnuler(r.id)}>
-                                            Annuler
-                                        </button>
-                                    )}
-                                </div>
-                            ))}
+                                .filter(r => r.status !== 'annulée')
+                                .map(r => {
+                                    // 👇 dejaPaye défini ICI dans le map
+                                    const dejaPaye = paiements.some(
+                                        p => p.reservation_id === r.id && p.status === 'confirme'
+                                    );
+
+                                    return (
+                                        <div key={r.id} style={styles.card}>
+                                            <h3 style={styles.cardTitle}>
+                                                {r.session?.cours?.titre || 'Cours'}
+                                            </h3>
+                                            <p style={styles.cardInfo}>
+                                                📅 {new Date(r.date_reservation).toLocaleDateString()}
+                                            </p>
+                                            {r.session && (
+                                                <p style={styles.cardInfo}>
+                                                    🕐 {new Date(r.session.date_debut).toLocaleDateString()} → {new Date(r.session.date_fin).toLocaleDateString()}
+                                                </p>
+                                            )}
+                                            <p style={styles.cardInfo}>
+                                                💰 {r.session?.cours?.prix} FCFA
+                                            </p>
+                                            <span style={{
+                                                ...styles.badge,
+                                                background: r.status === 'confirmée' ? '#10b981' : '#f59e0b'
+                                            }}>
+                                                {r.status}
+                                            </span>
+
+                                            {dejaPaye ? (
+                                                <span style={styles.dejaPaye}>✅ Payé</span>
+                                            ) : (
+                                                <div style={styles.payerBox}>
+                                                    <select
+                                                        style={styles.selectMethode}
+                                                        id={`methode-${r.id}`}
+                                                        defaultValue="mobile_money"
+                                                    >
+                                                        <option value="mobile_money">Mobile Money</option>
+                                                        <option value="wave">Wave</option>
+                                                        <option value="carte">Carte</option>
+                                                        <option value="virement">Virement</option>
+                                                    </select>
+                                                    <button
+                                                        style={styles.payerBtn}
+                                                        onClick={() => {
+                                                            const methode = document.getElementById(`methode-${r.id}`).value;
+                                                            handlePayer(r.id, methode);
+                                                        }}
+                                                    >
+                                                        💳 Payer
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            <button style={styles.annulerBtn} onClick={() => handleAnnuler(r.id)}>
+                                                Annuler
+                                            </button>
+                                        </div>
+                                    );
+                                })}
                         </div>
                     )}
                 </section>
@@ -136,13 +187,13 @@ export default function ApprenantDashboard() {
                                 <div key={c.id} style={styles.card}>
                                     <h3 style={styles.cardTitle}>{c.titre}</h3>
                                     <p style={styles.cardDesc}>{c.description}</p>
+                                    <p style={styles.formateur}>👨‍🏫 {c.formateur?.nom ?? 'Formateur inconnu'}</p>
+
                                     <div style={styles.cardFooter}>
                                         <span style={styles.prix}>{c.prix} FCFA</span>
                                         <span style={styles.info}>⏱ {c.duree} min</span>
                                         <span style={styles.info}>👥 {c.nb_places} places</span>
                                     </div>
-
-                                    {/* Sessions disponibles */}
                                     <div style={styles.sessionsBox}>
                                         <button
                                             style={styles.voirSessionsBtn}
@@ -150,16 +201,13 @@ export default function ApprenantDashboard() {
                                         >
                                             Voir les sessions
                                         </button>
-
                                         {sessions[c.id] && sessions[c.id].length === 0 && (
                                             <p style={styles.noSession}>Aucune session disponible</p>
                                         )}
-
                                         {sessions[c.id] && sessions[c.id].map(s => {
                                             const dejaReserve = reservations.some(
                                                 r => r.session_id === s.id && r.status !== 'annulée'
                                             );
-
                                             return (
                                                 <div key={s.id} style={styles.sessionItem}>
                                                     <span style={styles.sessionDate}>
@@ -219,4 +267,9 @@ const styles = {
     sessionDate: { fontSize:'0.8rem', color:'#4b5563' },
     reserverBtn: { background:'#4f46e5', color:'white', border:'none', padding:'0.4rem 0.8rem', borderRadius:'4px', cursor:'pointer', fontSize:'0.8rem' },
     dejaReserve: { fontSize:'0.8rem', color:'#10b981', fontWeight:'500' },
+    dejaPaye: { display:'block', marginTop:'0.5rem', color:'#10b981', fontWeight:'500', fontSize:'0.9rem' },
+    payerBox: { marginTop:'0.75rem', display:'flex', gap:'0.5rem' },
+    selectMethode: { flex:1, padding:'0.5rem', border:'1px solid #ddd', borderRadius:'4px', fontSize:'0.85rem' },
+    payerBtn: { background:'#10b981', color:'white', border:'none', padding:'0.5rem 1rem', borderRadius:'4px', cursor:'pointer', fontSize:'0.85rem' },
+    formateur: { color:'#4f46e5', fontSize:'0.85rem', marginBottom:'0.75rem', fontWeight:'500' },
 };

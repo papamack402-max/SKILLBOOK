@@ -12,18 +12,38 @@ class PaiementController extends Controller
     {
         $request->validate([
             'reservation_id' => 'required|exists:reservations,id',
-            'montant'        => 'required|numeric',
             'methode'        => 'required|in:carte,mobile_money,virement',
         ]);
 
+        // Vérifie que la réservation appartient bien à cet apprenant
+        $reservation = Reservation::where('id', $request->reservation_id)
+            ->where('user_id', $request->user()->id)
+            ->firstOrFail();
+
+        // Vérifie qu'il n'y a pas déjà un paiement
+        $dejaPaye = Paiement::where('reservation_id', $request->reservation_id)
+            ->where('status', 'confirme')
+            ->exists();
+
+        if ($dejaPaye) {
+            return response()->json([
+                'message' => 'Cette réservation est déjà payée.'
+            ], 422);
+        }
+
+        // Récupère le montant depuis le cours
+        $montant = $reservation->session->cours->prix;
+
         $paiement = Paiement::create([
-            ...$request->all(),
-            'date_paiement' => now(),
-            'statut'        => 'payé',
+            'reservation_id' => $request->reservation_id,
+            'montant'        => $montant,
+            'date_paiement'  => now(),
+            'methode'        => $request->methode,
+            'status'         => 'confirme',
         ]);
 
-        Reservation::findOrFail($request->reservation_id)
-            ->update(['statut' => 'confirmée']);
+        // Confirme automatiquement la réservation
+        $reservation->update(['status' => 'confirmée']);
 
         return response()->json($paiement, 201);
     }
@@ -31,7 +51,16 @@ class PaiementController extends Controller
     public function rembourser($id)
     {
         $paiement = Paiement::findOrFail($id);
-        $paiement->update(['statut' => 'remboursé']);
+        $paiement->update(['status' => 'remboursé']);
         return response()->json(['message' => 'Paiement remboursé']);
+    }
+
+    public function mesPaiements(Request $request)
+    {
+        $paiements = Paiement::whereHas('reservation', function ($q) use ($request) {
+            $q->where('user_id', $request->user()->id);
+        })->with('reservation.session.cours')->get();
+
+        return response()->json($paiements);
     }
 }
