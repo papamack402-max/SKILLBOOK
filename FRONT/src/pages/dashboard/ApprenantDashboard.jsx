@@ -1,4 +1,4 @@
-import { useState, useEffect , useCallback  } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
 import api from '../../api/axios';
@@ -6,14 +6,13 @@ import api from '../../api/axios';
 export default function ApprenantDashboard() {
     const [cours, setCours] = useState([]);
     const [reservations, setReservations] = useState([]);
+    const [sessions, setSessions] = useState({});
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState('');
     const { user, logout } = useAuth();
 
-
-
-    const fetchData = useCallback (async () => {
-    try {
+    const fetchData = useCallback(async () => {
+        try {
             const [coursRes, resaRes] = await Promise.all([
                 api.get('/cours'),
                 api.get('/apprenant/reservations'),
@@ -31,15 +30,30 @@ export default function ApprenantDashboard() {
         fetchData();
     }, [fetchData]);
 
-
-
-    const handleReserver = async () => {
+    const fetchSessions = async (coursId) => {
+        if (sessions[coursId]) return; // déjà chargé
         try {
-            // Pour l'instant on réserve sans session
-            // à améliorer quand tu ajoutes les sessions
-            setMessage('❌ Ce cours n\'a pas encore de session disponible.');
+            const res = await api.get(`/cours/${coursId}/sessions`);
+            setSessions(prev => ({ ...prev, [coursId]: res.data }));
         } catch {
-            setMessage('❌ Erreur lors de la réservation');
+            console.error('Erreur sessions');
+        }
+    };
+
+    const handleReserver = async (sessionId) => {
+        try {
+            const res = await api.post('/apprenant/reservations', { //CECI EST LA PARTIE AJOUTÉE
+                session_id: sessionId,
+            });
+            setMessage('✅ Réservation effectuée avec succès !');
+            // 👇 ajoute la nouvelle réservation localement
+            setReservations(prev => [...prev, res.data]);
+        } catch (err) {
+            if (err.response?.status === 422) {
+                setMessage('⚠️ Vous avez déjà réservé cette session !');
+            } else {
+                setMessage('❌ Erreur lors de la réservation');
+            }
         }
     };
 
@@ -48,7 +62,9 @@ export default function ApprenantDashboard() {
         try {
             await api.put(`/apprenant/reservations/${id}/annuler`);
             setMessage('✅ Réservation annulée');
-            fetchData();
+            setReservations(prev => prev.filter(r => r.id !== id));//Ajouté pour retirer la réservation annulée de la liste sans recharger toutes les données
+
+            //Optionnel : recharger les données pour avoir la liste à jour, surtout si d'autres infos changent
         } catch {
             setMessage('❌ Erreur lors de l\'annulation');
         }
@@ -56,21 +72,17 @@ export default function ApprenantDashboard() {
 
     return (
         <div style={styles.container}>
-            {/* Navbar */}
             <nav style={styles.nav}>
                 <h1 style={styles.logo}>🎓 Dashboard Apprenant</h1>
                 <div style={styles.navLinks}>
                     <span style={styles.welcome}>Bonjour, {user.nom}</span>
                     <Link to="/" style={styles.navBtn}>Tous les cours</Link>
-                    <button onClick={logout} style={styles.logoutBtn}>
-                        Déconnexion
-                    </button>
+                    <button onClick={logout} style={styles.logoutBtn}>Déconnexion</button>
                 </div>
             </nav>
 
             <main style={styles.main}>
                 {message && <p style={styles.message}>{message}</p>}
-
                 {loading && <p>Chargement...</p>}
 
                 {/* Mes réservations */}
@@ -80,7 +92,9 @@ export default function ApprenantDashboard() {
                         <p style={styles.empty}>Aucune réservation pour le moment.</p>
                     ) : (
                         <div style={styles.grid}>
-                            {reservations.map(r => (
+                            {reservations
+                            .filter(r => r.status !== 'annulée')
+                            .map(r => (
                                 <div key={r.id} style={styles.card}>
                                     <h3 style={styles.cardTitle}>
                                         {r.session?.cours?.titre || 'Cours'}
@@ -88,18 +102,20 @@ export default function ApprenantDashboard() {
                                     <p style={styles.cardInfo}>
                                         📅 {new Date(r.date_reservation).toLocaleDateString()}
                                     </p>
+                                    {r.session && (
+                                        <p style={styles.cardInfo}>
+                                            🕐 {new Date(r.session.date_debut).toLocaleDateString()} → {new Date(r.session.date_fin).toLocaleDateString()}
+                                        </p>
+                                    )}
                                     <span style={{
                                         ...styles.badge,
-                                        background: r.statut === 'confirmée' ? '#10b981'
-                                            : r.statut === 'annulée' ? '#ef4444' : '#f59e0b'
+                                        background: r.status === 'confirmée' ? '#10b981'
+                                            : r.status=== 'annulée' ? '#ef4444' : '#f59e0b'
                                     }}>
-                                        {r.statut}
+                                        {r.status}
                                     </span>
-                                    {r.statut !== 'annulée' && (
-                                        <button
-                                            style={styles.annulerBtn}
-                                            onClick={() => handleAnnuler(r.id)}
-                                        >
+                                    {r.status !== 'annulée' && (
+                                        <button style={styles.annulerBtn} onClick={() => handleAnnuler(r.id)}>
                                             Annuler
                                         </button>
                                     )}
@@ -125,12 +141,44 @@ export default function ApprenantDashboard() {
                                         <span style={styles.info}>⏱ {c.duree} min</span>
                                         <span style={styles.info}>👥 {c.nb_places} places</span>
                                     </div>
-                                    <button
-                                        style={styles.reserverBtn}
-                                        onClick={() => handleReserver(c.id)}
-                                    >
-                                        Réserver
-                                    </button>
+
+                                    {/* Sessions disponibles */}
+                                    <div style={styles.sessionsBox}>
+                                        <button
+                                            style={styles.voirSessionsBtn}
+                                            onClick={() => fetchSessions(c.id)}
+                                        >
+                                            Voir les sessions
+                                        </button>
+
+                                        {sessions[c.id] && sessions[c.id].length === 0 && (
+                                            <p style={styles.noSession}>Aucune session disponible</p>
+                                        )}
+
+                                        {sessions[c.id] && sessions[c.id].map(s => {
+                                            const dejaReserve = reservations.some(
+                                                r => r.session_id === s.id && r.status !== 'annulée'
+                                            );
+
+                                            return (
+                                                <div key={s.id} style={styles.sessionItem}>
+                                                    <span style={styles.sessionDate}>
+                                                        📅 {new Date(s.date_debut).toLocaleDateString()} → {new Date(s.date_fin).toLocaleDateString()}
+                                                    </span>
+                                                    {dejaReserve ? (
+                                                        <span style={styles.dejaReserve}>✅ Déjà réservé</span>
+                                                    ) : (
+                                                        <button
+                                                            style={styles.reserverBtn}
+                                                            onClick={() => handleReserver(s.id)}
+                                                        >
+                                                            Réserver
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -158,11 +206,17 @@ const styles = {
     card: { background:'white', borderRadius:'8px', padding:'1.5rem', boxShadow:'0 2px 8px rgba(0,0,0,0.1)' },
     cardTitle: { margin:'0 0 0.5rem', color:'#1f2937' },
     cardDesc: { color:'#6b7280', fontSize:'0.9rem', marginBottom:'1rem' },
-    cardInfo: { color:'#6b7280', fontSize:'0.9rem', marginBottom:'0.5rem' },
+    cardInfo: { color:'#6b7280', fontSize:'0.85rem', marginBottom:'0.25rem' },
     cardFooter: { display:'flex', gap:'1rem', flexWrap:'wrap', marginBottom:'1rem' },
     prix: { color:'#4f46e5', fontWeight:'bold' },
     info: { color:'#6b7280', fontSize:'0.85rem' },
     badge: { display:'inline-block', color:'white', padding:'0.2rem 0.6rem', borderRadius:'12px', fontSize:'0.75rem', marginBottom:'0.5rem' },
-    reserverBtn: { width:'100%', marginTop:'1rem', background:'#4f46e5', color:'white', border:'none', padding:'0.75rem', borderRadius:'6px', cursor:'pointer', fontSize:'0.9rem' },
     annulerBtn: { display:'block', marginTop:'0.5rem', background:'#ef4444', color:'white', border:'none', padding:'0.5rem 1rem', borderRadius:'4px', cursor:'pointer', fontSize:'0.85rem' },
+    sessionsBox: { borderTop:'1px solid #f3f4f6', paddingTop:'0.75rem', marginTop:'0.75rem' },
+    voirSessionsBtn: { background:'#f3f4f6', color:'#374151', border:'none', padding:'0.5rem 1rem', borderRadius:'4px', cursor:'pointer', fontSize:'0.85rem', marginBottom:'0.5rem' },
+    noSession: { color:'#9ca3af', fontSize:'0.85rem' },
+    sessionItem: { display:'flex', justifyContent:'space-between', alignItems:'center', padding:'0.5rem 0', borderBottom:'1px solid #f9fafb' },
+    sessionDate: { fontSize:'0.8rem', color:'#4b5563' },
+    reserverBtn: { background:'#4f46e5', color:'white', border:'none', padding:'0.4rem 0.8rem', borderRadius:'4px', cursor:'pointer', fontSize:'0.8rem' },
+    dejaReserve: { fontSize:'0.8rem', color:'#10b981', fontWeight:'500' },
 };

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('reservations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade'); //apprenant qui réserve le cours
-            $table->foreignId('session_id')->constrained('course_sessions')->onDelete('cascade');//session du cours réservé
+            $table->foreignId('session_id')->constrained('course_sessions')->onDelete('cascade'); //session du cours réservé
             $table->dateTime('date_reservation'); //date de la réservation
             $table->integer('nb_places_reservees'); //nombre de places réservées
             $table->enum('status', ['en_attente', 'confirmee', 'annulee'])->default('en_attente'); //le statut de la réservation, il peut être "en_attente", "confirmee" ou "annulee"

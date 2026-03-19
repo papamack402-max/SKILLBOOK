@@ -12,6 +12,7 @@ class ReservationController extends Controller
         return response()->json(
             Reservation::with('session.cours', 'paiement')
                 ->where('user_id', $request->user()->id)
+
                 ->get()
         );
     }
@@ -22,11 +23,23 @@ class ReservationController extends Controller
             'session_id' => 'required|exists:course_sessions,id',
         ]);
 
+        $dejaReserve = Reservation::where('user_id', $request->user()->id)
+            ->where('session_id', $request->session_id)
+            ->where('status', '!=', 'annulée')
+            ->exists();
+
+        if ($dejaReserve) {
+            return response()->json([
+                'message' => 'Vous avez déjà réservé cette session.'
+            ], 422);
+        }
+
         $reservation = Reservation::create([
-            'user_id'          => $request->user()->id(),
+            'user_id'          => $request->user()->id,
             'session_id'       => $request->session_id,
             'date_reservation' => now(),
-            'statut'           => 'en_attente',
+            'nb_places_reservees'  => 1,
+            'status'           => 'en_attente',
         ]);
 
         return response()->json($reservation, 201);
@@ -42,7 +55,7 @@ class ReservationController extends Controller
     public function annuler($id)
     {
         $reservation = Reservation::findOrFail($id);
-        $reservation->update(['statut' => 'annulée']);
+        $reservation->update(['status' => 'annulée']);
         return response()->json(['message' => 'Réservation annulée']);
     }
 }

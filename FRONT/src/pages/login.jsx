@@ -14,9 +14,9 @@ export default function Login() {
         setError('');
         try {
             const user = await login(email, password);
-            if (user.role === 'formateur') navigate('/formateur');
+            if (user.role === 'admin') navigate('/admin');
+            else if (user.role === 'formateur') navigate('/formateur');
             else if (user.role === 'apprenant') navigate('/apprenant');
-            else navigate('/');
         } catch  {
             setError('Email ou mot de passe incorrect');
         }
