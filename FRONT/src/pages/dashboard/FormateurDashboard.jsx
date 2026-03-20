@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
 import api from '../../api/axios';
 
+// Dashboard du formateur pour gérer ses cours et sessions
 export default function FormateurDashboard() {
     const [activeTab, setActiveTab] = useState('mesCours');
     const [cours, setCours] = useState([]);
@@ -17,11 +18,12 @@ export default function FormateurDashboard() {
     const [sessionForm, setSessionForm] = useState({
         date_debut: '', date_fin: ''
     });
+    // Permet d'afficher un message temporaire
     const [message, setMessage] = useState('');
     const [messageType, setMessageType] = useState('success');
     const [editForm, setEditForm] = useState(null);
     const { user, logout } = useAuth();
-
+// Permet de charger les cours du formateur
     const fetchCours = useCallback(async () => {
         try {
             const res = await api.get('/formateur/mes-cours');
@@ -34,13 +36,13 @@ export default function FormateurDashboard() {
     }, []);
 
     useEffect(() => { fetchCours(); }, [fetchCours]);
-
+// Permet d'afficher un message temporaire
     const showMessage = (msg, type = 'success') => {
         setMessage(msg);
         setMessageType(type);
         setTimeout(() => setMessage(''), 4000);
     };
-
+// Permet de charger les sessions d'un cours
     const fetchSessions = async (coursId) => {
         try {
             const res = await api.get(`/formateur/cours/${coursId}/sessions`);
@@ -49,10 +51,10 @@ export default function FormateurDashboard() {
             console.error('Erreur chargement sessions');
         }
     };
-
+// Permet de gérer les changements dans les formulaires
     const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
     const handleSessionChange = (e) => setSessionForm({ ...sessionForm, [e.target.name]: e.target.value });
-
+    // Permet de créer un cours
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
@@ -65,7 +67,7 @@ export default function FormateurDashboard() {
             showMessage('❌ Erreur lors de la création', 'error');
         }
     };
-
+    // Permet de créer une session pour un cours
     const handleSessionSubmit = async (e, coursId) => {
         e.preventDefault();
         try {
@@ -82,7 +84,7 @@ export default function FormateurDashboard() {
             showMessage('❌ Erreur lors de la création de session', 'error');
         }
     };
-
+    // Permet de supprimer un cours
     const handleDelete = async (id) => {
         if (!confirm('Supprimer ce cours ?')) return;
         try {
@@ -94,7 +96,7 @@ export default function FormateurDashboard() {
         }
     };
 
-    // 👇 Ajouté ici
+    // Permet de modifier un cours en brouillon
     const handleUpdate = async (e, id) => {
         e.preventDefault();
         try {
@@ -107,6 +109,7 @@ export default function FormateurDashboard() {
         }
     };
 
+    // Permet de supprimer une session
     const handleDeleteSession = async (sessionId, coursId) => {
         if (!confirm('Supprimer cette session ?')) return;
         try {
@@ -134,7 +137,7 @@ export default function FormateurDashboard() {
         <div className="min-h-screen bg-gray-100 flex">
 
             {/* Sidebar */}
-            <aside className={`${sidebarOpen ? 'w-64' : 'w-16'} bg-indigo-900 min-h-screen transition-all duration-300 flex flex-col`}>
+            <aside className={`${sidebarOpen ? 'w-64' : 'w-16'} bg-slate-900 h-screen sticky top-0 transition-all duration-300 flex flex-col flex-shrink-0`}>
                 <div className="p-4 flex items-center gap-3 border-b border-indigo-800">
                     <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0">
                         <span className="text-xl">🎓</span>
@@ -205,10 +208,6 @@ export default function FormateurDashboard() {
                 </nav>
 
                 <div className="p-3 border-t border-indigo-800 space-y-1">
-                    <Link to="/" className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-indigo-300 hover:bg-indigo-800 hover:text-white transition">
-                        <span className="text-xl">🌐</span>
-                        {sidebarOpen && <span className="text-sm">Site public</span>}
-                    </Link>
                     <button onClick={logout} className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-indigo-300 hover:bg-red-600 hover:text-white transition">
                         <span className="text-xl">🚪</span>
                         {sidebarOpen && <span className="text-sm">Déconnexion</span>}

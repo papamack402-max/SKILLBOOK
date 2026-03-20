@@ -70,7 +70,7 @@ export default function AdminDashboard() {
         <div className="min-h-screen bg-gray-100 flex">
 
             {/* Sidebar */}
-            <aside className={`${sidebarOpen ? 'w-64' : 'w-16'} bg-slate-900 min-h-screen transition-all duration-300 flex flex-col`}>
+           <aside className={`${sidebarOpen ? 'w-64' : 'w-16'} bg-slate-900 h-screen sticky top-0 transition-all duration-300 flex flex-col flex-shrink-0`}>
                 <div className="p-4 flex items-center gap-3 border-b border-slate-800">
                     <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0">
                         <span className="text-xl">🛡️</span>
@@ -145,10 +145,6 @@ export default function AdminDashboard() {
                 </nav>
 
                 <div className="p-3 border-t border-slate-800 space-y-1">
-                    <Link to="/" className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition">
-                        <span className="text-xl">🌐</span>
-                        {sidebarOpen && <span className="text-sm">Site public</span>}
-                    </Link>
                     <button onClick={logout} className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-red-600 hover:text-white transition">
                         <span className="text-xl">🚪</span>
                         {sidebarOpen && <span className="text-sm">Déconnexion</span>}

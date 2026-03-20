@@ -107,7 +107,7 @@ export default function ApprenantDashboard() {
         <div className="min-h-screen bg-gray-100 flex">
 
             {/* Sidebar */}
-            <aside className={`${sidebarOpen ? 'w-64' : 'w-16'} bg-indigo-900 min-h-screen transition-all duration-300 flex flex-col`}>
+           <aside className={`${sidebarOpen ? 'w-64' : 'w-16'} bg-slate-900 h-screen sticky top-0 transition-all duration-300 flex flex-col flex-shrink-0`}>
 
                 {/* Logo */}
                 <div className="p-4 flex items-center gap-3 border-b border-indigo-800">
