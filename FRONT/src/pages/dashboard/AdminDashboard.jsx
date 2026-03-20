@@ -52,9 +52,12 @@ export default function AdminDashboard() {
         }
     };
 
+    // 👇 Accepte les deux formes avec et sans accent
     const coursBrouillon = cours.filter(c => c.status === 'brouillon');
-    const coursPublies = cours.filter(c => c.status === 'publié');
-    const coursRejetes = cours.filter(c => c.status === 'rejeté');
+    const coursPublies = cours.filter(c => c.status === 'publié' || c.status === 'publie');
+    const coursRejetes = cours.filter(c => c.status === 'rejeté' || c.status === 'rejete');
+
+    const isPublie = (status) => status === 'publié' || status === 'publie';//
 
     const menuItems = [
         { id: 'attente', label: 'En attente', icon: '⏳', count: coursBrouillon.length },
@@ -158,17 +161,14 @@ export default function AdminDashboard() {
 
                 <header className="bg-white shadow-sm px-6 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-gray-500 hover:text-gray-700 transition text-xl">
-                            ☰
-                        </button>
+                        <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-gray-500 hover:text-gray-700 transition text-xl">☰</button>
                         <div>
-                            <h1 className="text-lg font-bold text-gray-900">
-                                {menuItems.find(m => m.id === activeTab)?.label}
-                            </h1>
+                            <h1 className="text-lg font-bold text-gray-900">{menuItems.find(m => m.id === activeTab)?.label}</h1>
                             <p className="text-gray-400 text-xs">Dashboard Administration</p>
                         </div>
                     </div>
-                    <span className="text-sm text-gray-500">Total : <strong>{cours.length} cours</strong></span>
+                   <span className="text-sm text-gray-500">Total : <strong>{menuItems.find(m => m.id === activeTab)?.count || 0} cours</strong>
+                    </span>
                 </header>
 
                 <main className="flex-1 p-6 overflow-auto">
@@ -178,9 +178,7 @@ export default function AdminDashboard() {
                             messageType === 'success' ? 'bg-green-50 text-green-700 border border-green-200' :
                             messageType === 'warning' ? 'bg-yellow-50 text-yellow-700 border border-yellow-200' :
                             'bg-red-50 text-red-700 border border-red-200'
-                        }`}>
-                            {message}
-                        </div>
+                        }`}>{message}</div>
                     )}
 
                     {loading && (
@@ -218,12 +216,8 @@ export default function AdminDashboard() {
                                                     <p className="text-xs text-gray-600">⏱ {c.duree} min · 👥 {c.nb_places} places</p>
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-2">
-                                                    <button onClick={() => handleValider(c.id)} className="bg-green-600 hover:bg-green-700 text-white text-xs font-semibold py-2.5 rounded-xl transition">
-                                                        ✅ Valider
-                                                    </button>
-                                                    <button onClick={() => handleRejeter(c.id)} className="bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold py-2.5 rounded-xl transition border border-red-200">
-                                                        ❌ Rejeter
-                                                    </button>
+                                                    <button onClick={() => handleValider(c.id)} className="bg-green-600 hover:bg-green-700 text-white text-xs font-semibold py-2.5 rounded-xl transition">✅ Valider</button>
+                                                    <button onClick={() => handleRejeter(c.id)} className="bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold py-2.5 rounded-xl transition border border-red-200">❌ Rejeter</button>
                                                 </div>
                                             </div>
                                         </div>
@@ -348,33 +342,27 @@ export default function AdminDashboard() {
                                                         <td className="px-6 py-4">
                                                             <div className="flex items-center gap-2">
                                                                 <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                                                    <span className="text-indigo-600 text-xs font-bold">
-                                                                        {c.formateur_nom?.charAt(0)}
-                                                                    </span>
+                                                                    <span className="text-indigo-600 text-xs font-bold">{c.formateur_nom?.charAt(0)}</span>
                                                                 </div>
                                                                 <span className="text-sm text-gray-700">{c.formateur_nom}</span>
                                                             </div>
                                                         </td>
                                                         <td className="px-6 py-4">
-                                                            <span className="text-sm font-bold text-indigo-600">
-                                                                {Number(c.prix).toLocaleString()} FCFA
-                                                            </span>
+                                                            <span className="text-sm font-bold text-indigo-600">{Number(c.prix).toLocaleString()} FCFA</span>
                                                         </td>
                                                         <td className="px-6 py-4">
                                                             <div className="flex items-center gap-1.5">
-                                                                <span className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center text-xs font-bold text-purple-600">
-                                                                    {c.nb_inscrits}
-                                                                </span>
+                                                                <span className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center text-xs font-bold text-purple-600">{c.nb_inscrits}</span>
                                                                 <span className="text-xs text-gray-400">apprenant(s)</span>
                                                             </div>
                                                         </td>
                                                         <td className="px-6 py-4">
                                                             <span className={`text-xs px-3 py-1.5 rounded-full font-medium ${
-                                                                c.status === 'publié'
+                                                                isPublie(c.status)
                                                                     ? 'bg-green-100 text-green-700'
                                                                     : 'bg-red-100 text-red-700'
                                                             }`}>
-                                                                {c.status === 'publié' ? '✅ Validé' : '❌ Rejeté'}
+                                                                {isPublie(c.status) ? '✅ Validé' : '❌ Rejeté'}
                                                             </span>
                                                         </td>
                                                         <td className="px-6 py-4 text-xs text-gray-400">

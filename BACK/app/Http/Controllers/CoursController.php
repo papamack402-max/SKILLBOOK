@@ -96,13 +96,13 @@ class CoursController extends Controller
     public function valider($id)
     {
         $cours = Cours::findOrFail($id);
-        $cours->update(['status' => 'publié']);
+        $cours->update(['status' => 'publie']);
         return response()->json(['message' => 'Cours validé']);
     }
     public function rejeter($id)
     {
         $cours = Cours::findOrFail($id);
-        $cours->update(['status' => 'rejeté']);
+        $cours->update(['status' => 'rejete']);
         return response()->json(['message' => 'Cours rejeté']);
     }
     public function mesCours(Request $request)
