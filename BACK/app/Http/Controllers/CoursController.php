@@ -57,7 +57,7 @@ class CoursController extends Controller
 
         return response()->json($cours);
     }
-
+    //permet de gérer les cours : création, affichage, mise à jour, suppression, validation, rejet et affichage des cours d'un formateur spécifique.
     public function store(Request $request)
     {
         $request->validate([

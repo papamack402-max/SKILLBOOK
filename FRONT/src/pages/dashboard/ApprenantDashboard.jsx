@@ -19,6 +19,7 @@ export default function ApprenantDashboard() {
     const [message, setMessage] = useState('');
     const [messageType, setMessageType] = useState('success');
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [recherche, setRecherche] = useState('');
     const { user, logout } = useAuth();
 
 // La fonction fetchData utilise useCallback pour éviter de se recréer à chaque rendu,
@@ -84,6 +85,12 @@ export default function ApprenantDashboard() {
         }
     };
 
+    const coursFiltres = cours.filter(c =>
+    c.titre.toLowerCase().includes(recherche.toLowerCase()) ||
+    c.description.toLowerCase().includes(recherche.toLowerCase()) ||
+    c.formateur?.nom.toLowerCase().includes(recherche.toLowerCase())
+    );
+
     const handleAnnuler = async (id) => {
         if (!confirm('Annuler cette réservation ?')) return;
         try {
@@ -138,6 +145,25 @@ export default function ApprenantDashboard() {
                         </div>
                     </div>
                 )}
+                {/* Barre de recherche */}
+                <div className="relative mb-5">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+                    <input
+                        type="text"
+                        placeholder="Rechercher un cours, un formateur..."
+                        value={recherche}
+                        onChange={e => setRecherche(e.target.value)}
+                        className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                    />
+                    {recherche && (
+                        <button
+                            onClick={() => setRecherche('')}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                            ✕
+                        </button>
+                    )}
+                </div>
 
                 {/* Menu */}
                 <nav className="flex-1 p-3 space-y-1">
@@ -170,13 +196,6 @@ export default function ApprenantDashboard() {
 
                 {/* Bas sidebar */}
                 <div className="p-3 border-t border-indigo-800 space-y-1">
-                    <Link
-                        to="/"
-                        className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-indigo-300 hover:bg-indigo-800 hover:text-white transition"
-                    >
-                        <span className="text-xl">🌐</span>
-                        {sidebarOpen && <span className="text-sm">Site public</span>}
-                    </Link>
                     <button
                         onClick={logout}
                         className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-indigo-300 hover:bg-red-600 hover:text-white transition"
@@ -253,7 +272,15 @@ export default function ApprenantDashboard() {
                     {activeTab === 'cours' && !loading && (
                         <div>
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                                {cours.map(c => (
+                                {coursFiltres.length === 0 ? (
+                                    <div className="col-span-3 text-center py-12">
+                                        <div className="text-5xl mb-3">🔍</div>
+                                        <p className="text-gray-500">Aucun cours trouvé pour "<strong>{recherche}</strong>"</p>
+                                        <button onClick={() => setRecherche('')} className="mt-3 text-indigo-600 text-sm underline">
+                                            Effacer la recherche
+                                        </button>
+                                    </div>
+                                ) : coursFiltres.map(c => (
                                     <div key={c.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition group">
                                         <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-5 relative overflow-hidden">
                                             <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-6 translate-x-6"></div>
@@ -392,8 +419,6 @@ export default function ApprenantDashboard() {
                                                             >
                                                                 <option value="mobile_money">📱 Mobile Money</option>
                                                                 <option value="wave">🌊 Wave</option>
-                                                                <option value="carte">💳 Carte bancaire</option>
-                                                                <option value="virement">🏦 Virement</option>
                                                             </select>
                                                             <button
                                                                 onClick={() => {

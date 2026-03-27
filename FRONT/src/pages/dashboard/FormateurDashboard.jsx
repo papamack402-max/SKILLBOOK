@@ -132,7 +132,6 @@ export default function FormateurDashboard() {
         { id: 'rejetes', label: 'Rejetés', icon: '❌', count: coursRejetes.length },
         { id: 'inscrits', label: 'Mes apprenants', icon: '👨‍🎓', count: totalInscrits },
     ];
-
     return (
         <div className="min-h-screen bg-gray-100 flex">
 
@@ -273,14 +272,13 @@ export default function FormateurDashboard() {
                     {/* MES COURS */}
                     {activeTab === 'mesCours' && !loading && (
                         <div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"></div>
                             {cours.length === 0 ? (
                                 <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-16 text-center">
                                     <div className="text-6xl mb-4">📚</div>
                                     <h3 className="text-gray-700 font-semibold mb-2">Aucun cours créé</h3>
                                 </div>
-                            ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                                    {cours.map(c => (
+                            ) : cours.map(c => (
                                         <div key={c.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition">
                                             <div className={`h-1.5 ${c.status === 'publie' || c.status === 'publié' ? 'bg-green-400' : c.status === 'rejete' || c.status === 'rejeté' ? 'bg-red-400' : 'bg-yellow-400'}`} />
                                             <div className="p-5">
@@ -322,8 +320,6 @@ export default function FormateurDashboard() {
                                             </div>
                                         </div>
                                     ))}
-                                </div>
-                            )}
                         </div>
                     )}
 

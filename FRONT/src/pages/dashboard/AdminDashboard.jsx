@@ -10,6 +10,7 @@ export default function AdminDashboard() {
     const [message, setMessage] = useState('');
     const [messageType, setMessageType] = useState('success');
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [recherche, setRecherche] = useState('');
     const { user, logout } = useAuth();
 
     const fetchData = useCallback(async () => {
@@ -65,6 +66,39 @@ export default function AdminDashboard() {
         { id: 'rejetes', label: 'Cours rejetés', icon: '❌', count: coursRejetes.length },
         { id: 'historique', label: 'Historique', icon: '📋', count: coursPublies.length + coursRejetes.length },
     ];
+
+    const coursPubliesFiltres = coursPublies.filter(c =>
+            c.titre.toLowerCase().includes(recherche.toLowerCase()) ||
+            c.formateur_nom?.toLowerCase().includes(recherche.toLowerCase())
+        );
+
+    const historiqueFiltre = [...coursPublies, ...coursRejetes]
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .filter(c =>
+            c.titre.toLowerCase().includes(recherche.toLowerCase()) ||
+            c.formateur_nom?.toLowerCase().includes(recherche.toLowerCase())
+        );
+
+    const BarreRecherche = () => (
+    <div className="relative mb-5">
+        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+        <input
+            type="text"
+            placeholder="Rechercher un cours, un formateur..."
+            value={recherche}
+            onChange={e => setRecherche(e.target.value)}
+            className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+        />
+        {recherche && (
+            <button
+                onClick={() => setRecherche('')}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+                ✕
+            </button>
+        )}
+         </div>
+        );
 
     return (
         <div className="min-h-screen bg-gray-100 flex">
@@ -226,14 +260,15 @@ export default function AdminDashboard() {
                     {/* COURS PUBLIES */}
                     {activeTab === 'publies' && !loading && (
                         <div>
-                            {coursPublies.length === 0 ? (
+                            <BarreRecherche />
+                            {coursPubliesFiltres.length === 0 ? (
                                 <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-16 text-center">
                                     <div className="text-6xl mb-4">📚</div>
                                     <h3 className="text-gray-700 font-semibold">Aucun cours publié</h3>
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                                    {coursPublies.map(c => (
+                                    {coursPubliesFiltres.map(c => (
                                         <div key={c.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition">
                                             <div className="h-1.5 bg-green-400" />
                                             <div className="p-5">
@@ -298,20 +333,21 @@ export default function AdminDashboard() {
                         </div>
                     )}
 
-                    {/* HISTORIQUE */}
+    {/* HISTORIQUE */}
                     {activeTab === 'historique' && !loading && (
                         <div>
-                            {coursPublies.length + coursRejetes.length === 0 ? (
+                            <BarreRecherche />
+                            {historiqueFiltre.length === 0 ? (
                                 <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-16 text-center">
-                                    <div className="text-6xl mb-4">📋</div>
-                                    <h3 className="text-gray-700 font-semibold">Aucun historique</h3>
+                                    <div className="text-5xl mb-3">🔍</div>
+                                    <p className="text-gray-500">Aucun résultat pour "<strong>{recherche}</strong>"</p>
                                 </div>
                             ) : (
                                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                                     <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
                                         <h2 className="font-bold text-gray-900">Historique des validations</h2>
                                         <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                                            {coursPublies.length + coursRejetes.length} cours traités
+                                            {historiqueFiltre.length} cours
                                         </span>
                                     </div>
                                     <div className="overflow-x-auto">
@@ -327,9 +363,7 @@ export default function AdminDashboard() {
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-50">
-                                                {[...coursPublies, ...coursRejetes]
-                                                    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-                                                    .map(c => (
+                                                {historiqueFiltre.map(c => (
                                                     <tr key={c.id} className="hover:bg-gray-50 transition">
                                                         <td className="px-6 py-4">
                                                             <p className="text-sm font-semibold text-gray-900">{c.titre}</p>
@@ -354,9 +388,7 @@ export default function AdminDashboard() {
                                                         </td>
                                                         <td className="px-6 py-4">
                                                             <span className={`text-xs px-3 py-1.5 rounded-full font-medium ${
-                                                                isPublie(c.status)
-                                                                    ? 'bg-green-100 text-green-700'
-                                                                    : 'bg-red-100 text-red-700'
+                                                                isPublie(c.status) ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                                                             }`}>
                                                                 {isPublie(c.status) ? '✅ Validé' : '❌ Rejeté'}
                                                             </span>
