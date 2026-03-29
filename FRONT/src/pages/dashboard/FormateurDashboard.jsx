@@ -12,6 +12,7 @@ export default function FormateurDashboard() {
     const [showSessionForm, setShowSessionForm] = useState(null);
     const [sessions, setSessions] = useState({});
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [recherche, setRecherche] = useState('');
     const [form, setForm] = useState({
         titre: '', description: '', prix: '', duree: '', nb_places: ''
     });
@@ -132,6 +133,43 @@ export default function FormateurDashboard() {
         { id: 'rejetes', label: 'Rejetés', icon: '❌', count: coursRejetes.length },
         { id: 'inscrits', label: 'Mes apprenants', icon: '👨‍🎓', count: totalInscrits },
     ];
+
+        // Filtres de recherche
+    const coursPubliesFiltres = coursPublies.filter(c =>
+        c.titre.toLowerCase().includes(recherche.toLowerCase()) ||
+        c.description?.toLowerCase().includes(recherche.toLowerCase())
+    );
+
+    const mesCoursFiltre = cours.filter(c =>
+        c.titre.toLowerCase().includes(recherche.toLowerCase()) ||
+        c.description?.toLowerCase().includes(recherche.toLowerCase())
+    );
+
+
+
+        // Composant barre de recherche
+        const BarreRecherche = () => (
+            <div className="relative mb-5">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+                <input
+                    type="text"
+                    placeholder="Rechercher un cours..."
+                    value={recherche}
+                    onChange={e => setRecherche(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                />
+                {recherche && (
+                    <button
+                        onClick={() => setRecherche('')}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                        ✕
+                    </button>
+                )}
+            </div>
+        );
+
+
     return (
         <div className="min-h-screen bg-gray-100 flex">
 
@@ -272,13 +310,14 @@ export default function FormateurDashboard() {
                     {/* MES COURS */}
                     {activeTab === 'mesCours' && !loading && (
                         <div>
+                            <BarreRecherche />  
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"></div>
                             {cours.length === 0 ? (
                                 <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-16 text-center">
                                     <div className="text-6xl mb-4">📚</div>
                                     <h3 className="text-gray-700 font-semibold mb-2">Aucun cours créé</h3>
                                 </div>
-                            ) : cours.map(c => (
+                            ) : mesCoursFiltre.map(c => (
                                         <div key={c.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition">
                                             <div className={`h-1.5 ${c.status === 'publie' || c.status === 'publié' ? 'bg-green-400' : c.status === 'rejete' || c.status === 'rejeté' ? 'bg-red-400' : 'bg-yellow-400'}`} />
                                             <div className="p-5">
@@ -326,6 +365,7 @@ export default function FormateurDashboard() {
                     {/* COURS PUBLIES */}
                     {activeTab === 'publies' && !loading && (
                         <div>
+                                <BarreRecherche />
                             {coursPublies.length === 0 ? (
                                 <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-16 text-center">
                                     <div className="text-6xl mb-4">⏳</div>
@@ -334,7 +374,7 @@ export default function FormateurDashboard() {
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                                    {coursPublies.map(c => (
+                                    {coursPubliesFiltres.map(c => (
                                         <div key={c.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition">
                                             <div className="h-1.5 bg-green-400" />
                                             <div className="p-5">
